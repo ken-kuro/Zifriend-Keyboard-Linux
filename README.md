@@ -29,5 +29,28 @@ Trying Fedora yielded the same error. Thankfully, I stumbled upon information ab
 
 However, there's a catch: how do you obtain the VendorID and ProductID when the device isn't recognized by the system and doesn't show up in lsusb or libinput list-devices? As a Linux enthusiast, this might sound strange, but here's where Windows comes in handy (yes, I also happen to be a [gamer](https://discord.com/users/581475300777394190) – a god-level one, of course 😏). With a dual-boot setup, I simply booted into Windows, plugged in the keyboard, and went to Device Manager > Keyboard. There, I found the device details, including the Hardware IDs (VendorID and ProductID). You can find more information on this process [here](https://kb.synology.com/en-in/DSM/tutorial/How_do_I_check_the_PID_VID_of_my_USB_device). In my case, the ZA63Pro's IDs were `5566:0008`
 
-The solution is to add `usbcore.quirks=5566:0008:gki`  (replacing the values with your specific VendorID, ProductID, and potentially the flag) to the [kernel parameters](https://wiki.archlinux.org/title/kernel_parameters). Since I use GRUB, I edited /etc/default/grub, added the parameter to GRUB_CMDLINE_LINUX_DEFAULT, regenerated grub.cfg, and voila! My keyboard now works perfectly in wired mode.
+If your device is showing up as **HID Device** without specifying a keyboard name in Windows Device Manager. Then it will also not display the VID and PID in the details section. To get the correct VID and PID, run this command on **Windows powershell** from any windows manchine when the keyboard is plugeed in.
+
+```
+Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match ‘^USB’ } | Format-Table -Wrap -AutoSize
+```
+
+And from the list discard the devices which has `VID 3151` and `PID 3020`. They are the windows default. Look for the **HID device** with other VID and PID. Also looks like ZiFriend, uses same VID and PID for all variant of keyboards. Even ZA68 also shares the same VID : 5566 and PID : 0008
+
+The solution is to add `usbcore.quirks=5566:0008:gki`  (replacing the values with your specific VendorID, ProductID, and potentially the flag) to the [kernel parameters](https://wiki.archlinux.org/title/kernel_parameters). Since I use GRUB, I edited /etc/default/grub, added the parameter to GRUB_CMDLINE_LINUX_DEFAULT
+
+```bash
+sudo nano /etc/default/grub
+
+GRUB_CMDLINE_LINUX_DEFAULT="usbcore.quirks=YOUR_VID:YOUR_PID:gki"
+
+```
+
+regenerated grub.cfg
+
+```
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+and voila! My keyboard now works perfectly in wired mode.
 
